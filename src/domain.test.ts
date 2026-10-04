@@ -274,6 +274,59 @@ describe("Пересборка", () => {
   });
 });
 describe("Напоминания и импорт", () => {
+  it("импортированное правило не допускает повторяющиеся шаги и слишком длинный ключ", () => {
+    const d = initialData(zone);
+    d.rules = [
+      {
+        id: "r",
+        title: "Серия",
+        note: "",
+        date: "2026-10-05",
+        time: null,
+        zone,
+        duration: null,
+        important: false,
+        fixed: false,
+        reminder: "off",
+        steps: [
+          { id: "same", title: "Один", done: false },
+          { id: "same", title: "Два", done: false },
+        ],
+        kind: "daily",
+        days: [1],
+        start: "2026-10-05",
+        enabled: true,
+      },
+    ];
+    expect(() => parseImport(JSON.stringify(d))).toThrow();
+    d.rules[0].steps = [];
+    d.rules[0].id = "r".repeat(101);
+    expect(() => parseImport(JSON.stringify(d))).toThrow();
+  });
+  it("длинные допустимые id не мешают завершению после импорта", () => {
+    const d = withTasks(
+      task("t".repeat(150), {
+        steps: [{ id: "s".repeat(150), title: "Шаг", done: false }],
+      }),
+    );
+    const restored = parseImport(JSON.stringify(d));
+    transition(restored, restored.tasks[0].id, "start", now);
+    transition(
+      restored,
+      restored.tasks[0].id,
+      "step",
+      now + 1,
+      restored.tasks[0].steps[0].id,
+    );
+    expect(dataSchema.safeParse(restored).success).toBe(true);
+  });
+  it("база не растёт до размера, который нельзя восстановить из своего экспорта", () => {
+    const d = initialData(zone);
+    d.tasks = Array.from({ length: 500 }, (_, i) =>
+      task(String(i), { note: "x".repeat(10000) }),
+    );
+    expect(dataSchema.safeParse(d).success).toBe(false);
+  });
   it("предварительное и точное — разные события", () => {
     const d = withTasks(task("a", { time: "10:00", reminder: "before" }));
     expect(reminderEvents(d, now - 300001)).toHaveLength(0);

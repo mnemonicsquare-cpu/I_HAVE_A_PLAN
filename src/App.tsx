@@ -167,7 +167,9 @@ export function App() {
     } catch (err) {
       setError(
         err instanceof ZodError
-          ? "Проверьте значения: дату, длительность и поля настроек. Изменения не сохранены"
+          ? /[А-Яа-я]/.test(err.issues[0]?.message ?? "")
+            ? err.issues[0].message
+            : "Проверьте значения: дату, длительность и поля настроек. Изменения не сохранены"
           : err instanceof Error
             ? err.message
             : "Не удалось сохранить. Попробуйте ещё раз",

@@ -104,7 +104,7 @@ export const taskSchema = z
 const ruleSchema = z
   .object({
     ...fields,
-    id,
+    id: id.max(100),
     kind: z.enum(["daily", "weekdays", "weekly", "custom"]),
     days: z.array(z.number().int().min(1).max(7)).min(1).max(7),
     start: date,
@@ -136,11 +136,17 @@ export const dataSchema = z
     rules: z.array(ruleSchema).max(1000),
     settings: settingsSchema,
     selectedId: id.nullable(),
-    rewards: z.array(z.object({ key: id, at: stamp }).strict()).max(100000),
+    rewards: z
+      .array(z.object({ key: z.string().min(1).max(400), at: stamp }).strict())
+      .max(100000),
   })
   .strict()
   .superRefine((d, c) => {
     const fail = (message: string) => c.addIssue({ code: "custom", message });
+    if (new TextEncoder().encode(JSON.stringify(d)).length > 5_000_000)
+      fail(
+        "База достигла предела 5 МБ. Скачайте копию и удалите ненужные дела перед добавлением новых",
+      );
     if (new Set(d.tasks.map((t) => t.id)).size !== d.tasks.length)
       fail("Повторяются дела");
     if (new Set(d.rules.map((r) => r.id)).size !== d.rules.length)
@@ -164,13 +170,16 @@ export const dataSchema = z
         occurrences.add(key);
       } else if (t.occurrenceDate) fail("Нет правила повторения");
     }
-    for (const r of d.rules)
+    for (const r of d.rules) {
+      if (new Set(r.steps.map((s) => s.id)).size !== r.steps.length)
+        fail("Повторяются шаги в серии");
       if (
         (r.time && !r.date) ||
         (r.fixed && !r.time) ||
         (r.reminder !== "off" && !r.time)
       )
         fail("Неверное время серии");
+    }
   });
 export type Task = z.infer<typeof taskSchema>;
 export type Rule = z.infer<typeof ruleSchema>;

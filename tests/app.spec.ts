@@ -56,6 +56,9 @@ test("первая минута: запись, начало, завершени�
     .getByRole("button", { name: "Начать сейчас", exact: true })
     .click();
   await page.getByRole("button", { name: "Дело готово", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Сейчас нет выбранного дела" }),
+  ).toBeVisible();
   await page.reload();
   await page.getByRole("link", { name: "Сегодня", exact: true }).click();
   await page.getByText("Готово сегодня", { exact: false }).click();
@@ -83,6 +86,9 @@ test("три шага, пауза, восстановление, правка и
     page.getByRole("heading", { name: "Выбрать документы" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Пауза", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Продолжить", exact: true }),
+  ).toBeVisible();
   await page.reload();
   await page.getByRole("button", { name: "Продолжить", exact: true }).click();
   await page.getByRole("button", { name: "Шаг готов", exact: true }).click();

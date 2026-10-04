@@ -160,7 +160,7 @@ export const store = new Store();
 export const saveDraft = (id: string, value: string) =>
   store.drafts.put({ id, value });
 export async function exportData(data: Data) {
-  const blob = new Blob([JSON.stringify(data, null, 2)], {
+  const blob = new Blob([JSON.stringify(data)], {
     type: "application/json",
   });
   const url = URL.createObjectURL(blob);
